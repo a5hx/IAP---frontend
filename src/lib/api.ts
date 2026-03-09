@@ -280,7 +280,7 @@ async function route(
 
   // [M9] Reset password (via email token)
   if (method === "POST" && path === "/auth/reset-password") {
-    const res = await axiosInstance.post("/users/reset-password/", {
+    const res = await axiosInstance.post("/users/reset-password", {
       token: body.token,
       new_password: body.new_password,
     });
