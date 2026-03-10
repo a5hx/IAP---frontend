@@ -5,27 +5,93 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, GraduationCap, Fingerprint } from "lucide-react";
+import { Loader2, GraduationCap, Fingerprint, Mail } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AuthLayout } from "@/components/AuthLayout";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, verifyOtp, isLoading, error, clearError, otpPending, pendingEmail } = useAuthStore();
   const [loginInput, setLoginInput] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
     try {
       await login(loginInput, password);
+      // If not otp_pending, redirect (otpPending will be true and we stay on page)
+      if (!useAuthStore.getState().otpPending) {
+        navigate("/dashboard");
+      }
+    } catch {
+      // Error is handled in store
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError();
+    try {
+      await verifyOtp(pendingEmail!, otp);
       navigate("/dashboard");
     } catch {
       // Error is handled in store
     }
   };
 
+  // ── OTP verification step ──────────────────────────────────────────
+  if (otpPending) {
+    return (
+      <AuthLayout title="Check your email" subtitle={`We sent a 6-digit code to ${pendingEmail}`}>
+        <form onSubmit={handleOtpSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="otp" className="text-sm font-medium">Verification Code</Label>
+            <Input
+              id="otp"
+              placeholder="000000"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              required
+              disabled={isLoading}
+              maxLength={6}
+              inputMode="numeric"
+              autoFocus
+              className="rounded-xl h-11 bg-background border-border focus:border-primary transition-all text-center text-2xl tracking-widest font-bold text-slate-900 dark:text-slate-100"
+            />
+            <p className="text-xs text-muted-foreground">Enter the 6-digit code from your email. It expires in 10 minutes.</p>
+          </div>
+
+          {error && (
+            <div className="text-sm font-medium text-destructive bg-destructive/10 px-3 py-2 rounded-lg animate-fade-in">
+              {error}
+            </div>
+          )}
+
+          <Button
+            variant="gradient"
+            className="w-full h-11 rounded-xl font-semibold text-base shadow-md"
+            type="submit"
+            disabled={isLoading || otp.length !== 6}
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Verify & Sign In
+          </Button>
+
+          <button
+            type="button"
+            className="w-full text-sm text-muted-foreground hover:text-primary transition-colors"
+            onClick={() => { clearError(); useAuthStore.getState().logout(); }}
+          >
+            ← Back to login
+          </button>
+        </form>
+      </AuthLayout>
+    );
+  }
+
+  // ── Normal login form ──────────────────────────────────────────────
   return (
     <AuthLayout
       title="Welcome back"

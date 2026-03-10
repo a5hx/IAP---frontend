@@ -18,7 +18,10 @@ interface AuthState {
     isAuthenticated: boolean
     isLoading: boolean
     error: string | null
+    otpPending: boolean
+    pendingEmail: string | null
     login: (login: string, password: string) => Promise<void>
+    verifyOtp: (email: string, otp: string) => Promise<void>
     loginWithToken: (token: string) => Promise<{ first_login: boolean }>
     signup: (username: string, email: string, password: string, name: string) => Promise<void>
     logout: () => void
@@ -34,6 +37,8 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             isLoading: false,
             error: null,
+            otpPending: false,
+            pendingEmail: null,
 
             loginWithToken: async (token: string) => {
                 setAuthToken(token)
@@ -53,14 +58,17 @@ export const useAuthStore = create<AuthState>()(
             },
 
             login: async (loginStr, password) => {
-                set({ isLoading: true, error: null })
+                set({ isLoading: true, error: null, otpPending: false, pendingEmail: null })
                 try {
                     const res = await api.post('/auth/login', { login: loginStr, password })
+                    if (res.data?.status === 'otp_pending') {
+                        set({ isLoading: false, otpPending: true, pendingEmail: res.data.email })
+                        return
+                    }
+                    // Fallback: direct token (shouldn't happen with OTP flow)
                     const token = res.data.access_token
                     setAuthToken(token)
                     set({ token, isAuthenticated: true })
-
-                    // Fetch user details
                     const me = await api.get('/auth/me')
                     set({ user: me.data, isLoading: false })
                 } catch (error: any) {
@@ -69,6 +77,24 @@ export const useAuthStore = create<AuthState>()(
                         error: error?.response?.data?.detail || 'Login failed',
                         isAuthenticated: false,
                         token: null
+                    })
+                    throw error
+                }
+            },
+
+            verifyOtp: async (email, otp) => {
+                set({ isLoading: true, error: null })
+                try {
+                    const res = await api.post('/auth/verify-otp', { email, otp })
+                    const token = res.data.access_token
+                    setAuthToken(token)
+                    set({ token, isAuthenticated: true, otpPending: false, pendingEmail: null })
+                    const me = await api.get('/auth/me')
+                    set({ user: me.data, isLoading: false })
+                } catch (error: any) {
+                    set({
+                        isLoading: false,
+                        error: error?.response?.data?.detail || 'Invalid OTP',
                     })
                     throw error
                 }

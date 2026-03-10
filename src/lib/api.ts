@@ -220,8 +220,11 @@ async function route(
     const res = await axiosInstance.post("/auth/login/access-token", form, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
-
-    // Auto-detect and save user's timezone after login
+    // OTP step — backend returns {status:"otp_pending", email} instead of a token
+    if (res.data?.status === "otp_pending") {
+      return { data: res.data };
+    }
+    // Normal token response (should not happen now, but keep as fallback)
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const token = res.data?.access_token;
@@ -231,7 +234,22 @@ async function route(
         });
       }
     } catch (e) { console.warn("Auto-detect timezone failed", e); }
+    return { data: res.data };
+  }
 
+  // [M1b] Verify OTP after login
+  if (method === "POST" && path === "/auth/verify-otp") {
+    const res = await axiosInstance.post("/auth/login/verify-otp", body);
+    // Auto-save timezone after successful OTP verification
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const token = res.data?.access_token;
+      if (tz && token) {
+        await axiosInstance.put("/users/me/timezone", { tz }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch (e) { console.warn("Auto-detect timezone failed", e); }
     return { data: res.data };
   }
 
