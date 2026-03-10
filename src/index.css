@@ -1,0 +1,1006 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Vibrant Light Theme ── */
+    --background: 220 30% 96%;
+    /* Cool grey-blue tint, not pure white */
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Richer Primary: Vivid Violet/Indigo - Darkened for visibility */
+    --primary: 250 90% 55%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    /* Vivid Accents */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 250 85% 60%;
+
+    --radius: 1rem;
+    /* More rounded */
+
+    /* Vibrant Palette (High Saturation) */
+    --vibrant-purple: 260 90% 65%;
+    --vibrant-blue: 220 90% 60%;
+    --vibrant-cyan: 190 90% 50%;
+    --vibrant-pink: 330 85% 60%;
+    --vibrant-orange: 25 95% 60%;
+    --vibrant-green: 150 80% 45%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 250 85% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222 47% 11.2%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 250 85% 60%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 41% 14%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 41% 14%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 250 85% 65%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217.2 32.6% 20%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 20%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 30% 25%;
+    --input: 217.2 30% 25%;
+    --ring: 250 85% 65%;
+
+    --vibrant-purple: 260 90% 70%;
+    --vibrant-blue: 220 90% 65%;
+    --vibrant-cyan: 190 90% 60%;
+    --vibrant-pink: 330 85% 65%;
+    --vibrant-orange: 25 95% 65%;
+    --vibrant-green: 150 80% 50%;
+
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 250 85% 65%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 30% 25%;
+    --sidebar-ring: 250 85% 65%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  /* Ensure input text and autofill are always visible */
+  input,
+  textarea,
+  select {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+    box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+    caret-color: hsl(var(--foreground));
+  }
+
+  .dark input,
+  .dark textarea,
+  .dark select {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover,
+  .dark input:-webkit-autofill:focus,
+  .dark input:-webkit-autofill:active {
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+    box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+    caret-color: hsl(var(--foreground));
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background-image:
+      radial-gradient(at 0% 0%, hsla(var(--vibrant-purple), 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(var(--vibrant-cyan), 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(var(--vibrant-pink), 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(var(--vibrant-blue), 0.1) 0px, transparent 50%);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ─── Force solid, readable backgrounds on all popups ─── */
+
+/* Light mode: white bg, dark text, visible borders */
+[data-radix-popper-content-wrapper]>*,
+[role="dialog"],
+.dropdown-solid-bg {
+  background-color: #ffffff !important;
+  color: #1a1a2e !important;
+}
+
+[data-radix-popper-content-wrapper]>* *,
+[role="dialog"] * {
+  color: inherit;
+}
+
+/* Inputs inside popups: slightly gray bg */
+[role="dialog"] input,
+[role="dialog"] textarea,
+[role="dialog"] select,
+[role="dialog"] [role="combobox"] {
+  background-color: #f4f4f5 !important;
+  color: #1a1a2e !important;
+  border-color: #d4d4d8 !important;
+}
+
+[role="dialog"] input::placeholder,
+[role="dialog"] textarea::placeholder {
+  color: #71717a !important;
+}
+
+/* Labels */
+[role="dialog"] label {
+  color: #3f3f46 !important;
+}
+
+/* Dark mode overrides */
+.dark [data-radix-popper-content-wrapper]>*,
+.dark [role="dialog"],
+.dark .dropdown-solid-bg {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+.dark [data-radix-popper-content-wrapper]>* *,
+.dark [role="dialog"] * {
+  color: inherit;
+}
+
+.dark [role="dialog"] input,
+.dark [role="dialog"] textarea,
+.dark [role="dialog"] select,
+.dark [role="dialog"] [role="combobox"] {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+.dark [role="dialog"] input::placeholder,
+.dark [role="dialog"] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.dark [role="dialog"] label {
+  color: #cbd5e1 !important;
+}
+
+/* Separators */
+.dark [role="dialog"] [role="separator"] {
+  background-color: #334155 !important;
+}
+
+/* Focus states in dark popups */
+.dark [data-radix-popper-content-wrapper] [data-highlighted],
+.dark [data-radix-popper-content-wrapper] [data-state="checked"] {
+  background-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Dropdown items hover */
+[data-radix-popper-content-wrapper] [role="option"]:hover,
+[data-radix-popper-content-wrapper] [role="menuitem"]:hover {
+  background-color: #f4f4f5 !important;
+}
+
+.dark [data-radix-popper-content-wrapper] [role="option"]:hover,
+.dark [data-radix-popper-content-wrapper] [role="menuitem"]:hover {
+  background-color: #334155 !important;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.dark .glass {
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.dark .glass-card {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.sidebar-gradient {
+  background: hsl(var(--sidebar-background));
+  border-right: 1px solid hsl(var(--sidebar-border));
+}
+
+.dark .sidebar-gradient {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(31, 41, 55, 0.9) 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, hsl(var(--vibrant-purple)), hsl(var(--vibrant-cyan)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-border-bottom {
+  position: relative;
+}
+
+.gradient-border-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, hsl(var(--vibrant-purple)), hsl(var(--vibrant-cyan)));
+}
+
+/* Global Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Firefox support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+
+
+/* RBC overrides adapted for Vibrant theme */
+.rbc-calendar {
+  font-family: "Inter", sans-serif !important;
+}
+
+.rbc-header {
+  padding: 12px 4px !important;
+  font-weight: 600 !important;
+  color: hsl(var(--foreground)) !important;
+  text-transform: uppercase;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid hsl(var(--border)) !important;
+}
+
+.rbc-event {
+  border-radius: 6px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.rbc-today {
+  background-color: hsla(var(--vibrant-blue), 0.05) !important;
+}
+
+.rbc-time-view,
+.rbc-month-view {
+  border: 1px solid hsla(var(--border), 0.8) !important;
+  background: transparent !important;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  border-top: 1px solid hsla(var(--border), 0.5) !important;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid hsla(var(--border), 0.5) !important;
+}
+
+.rbc-time-header-content {
+  border-left: 1px solid hsla(var(--border), 0.5) !important;
+}
+
+.rbc-time-content {
+  border-top: 1px solid hsla(var(--border), 0.5) !important;
+}
+
+.rbc-time-content>*+*>* {
+  border-left: 1px solid hsla(var(--border), 0.5) !important;
+}
+
+/* Extra RBC gridline + motion polish */
+.rbc-time-header {
+  border-bottom: 1px solid hsla(var(--border), 0.7) !important;
+}
+
+.rbc-time-header-content {
+  border-left: 1px solid hsla(var(--border), 0.7) !important;
+}
+
+.rbc-time-content {
+  border-top: 1px solid hsla(var(--border), 0.7) !important;
+}
+
+.rbc-time-content .rbc-time-slot {
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.rbc-time-content .rbc-time-slot:hover {
+  background-color: hsla(var(--vibrant-purple), 0.06) !important;
+}
+
+.rbc-event {
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.rbc-event:hover {
+  transform: translateY(-1px) scale(1.01);
+  filter: brightness(1.02);
+}
+
+/* Month view gridlines */
+.rbc-month-row+.rbc-month-row {
+  border-top: 1px solid hsla(var(--border), 0.7) !important;
+}
+
+.rbc-day-bg+.rbc-day-bg {
+  border-left: 1px solid hsla(var(--border), 0.7) !important;
+}
+
+.rbc-month-view .rbc-date-cell {
+  padding: 6px 8px !important;
+}
+
+.rbc-off-range-bg {
+  background-color: hsla(var(--muted), 0.45) !important;
+}
+
+/* ==============================
+   React Big Calendar — Gridlines Fix (FINAL)
+   ============================== */
+
+/* ---- WEEK/DAY: remove header "boxed strip" ---- */
+.rbc-time-header,
+.rbc-time-header-gutter,
+.rbc-time-header-content {
+  border: 0 !important;
+}
+
+/* Day-name header cells should have subtle vertical separators only */
+.rbc-time-header .rbc-header+.rbc-header {
+  border-left: 1px solid rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Dark mode header separators */
+.dark .rbc-time-header .rbc-header+.rbc-header {
+  border-left: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+/* ---- WEEK/DAY gridlines (time grid area only) ---- */
+.rbc-time-content {
+  border-top: 1px solid rgba(0, 0, 0, 0.18) !important;
+}
+
+.rbc-time-content>*+* {
+  border-left: 1px solid rgba(0, 0, 0, 0.18) !important;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.18) !important;
+}
+
+.rbc-time-slot {
+  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Dark mode week/day gridlines */
+.dark .rbc-time-content {
+  border-top: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark .rbc-time-content>*+* {
+  border-left: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark .rbc-timeslot-group {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark .rbc-time-slot {
+  border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+/* ==============================
+   React Big Calendar — MONTH view gridlines (FINAL)
+   ============================== */
+
+.rbc-month-view {
+  border: 1px solid rgba(0, 0, 0, 0.18) !important;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Month header separator (Sun..Sat) */
+.rbc-month-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Vertical day separators */
+.rbc-row-bg .rbc-day-bg+.rbc-day-bg {
+  border-left: 1px solid rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Horizontal week separators */
+.rbc-month-row+.rbc-month-row {
+  border-top: 1px solid rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Cell background (subtle) */
+.rbc-day-bg {
+  background: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Dark mode month view */
+.dark .rbc-month-view {
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark .rbc-month-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark .rbc-row-bg .rbc-day-bg+.rbc-day-bg {
+  border-left: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark .rbc-month-row+.rbc-month-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark .rbc-day-bg {
+  background: rgba(0, 0, 0, 0.18) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   🎨 ANIMATIONS & MAGIC EFFECTS LIBRARY
+   ══════════════════════════════════════════════════════ */
+
+/* ── Fade In ── */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
+/* ── Slide In Up ── */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Scale In / Pop ── */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Bounce In ── */
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+
+  80% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Float (for butterflies, stars, etc.) ── */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  33% {
+    transform: translateY(-12px) rotate(3deg);
+  }
+
+  66% {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-18px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+/* ── Shimmer / sheen effect ── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.6) 50%, transparent 75%);
+  background-size: 200% auto;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ── Rotating Gradient ── */
+@keyframes spin-gradient {
+  0% {
+    --g-rotate: 0deg;
+  }
+
+  100% {
+    --g-rotate: 360deg;
+  }
+}
+
+/* ── Gradient Shift ── */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* ── Pulse Glow ── */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 12px 2px hsla(var(--vibrant-purple), 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 32px 8px hsla(var(--vibrant-purple), 0.65);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+/* ── Magic Wand Sparkle ── */
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+
+  40% {
+    opacity: 1;
+    transform: scale(1.2) rotate(30deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(60deg);
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle 0.8s ease-out both;
+}
+
+/* ── Twinkle (for star/sparkle decorations) ── */
+@keyframes twinkle {
+
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.animate-twinkle {
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+/* ── Wiggle ── */
+@keyframes wiggle {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  20% {
+    transform: rotate(-8deg);
+  }
+
+  40% {
+    transform: rotate(8deg);
+  }
+
+  60% {
+    transform: rotate(-4deg);
+  }
+
+  80% {
+    transform: rotate(4deg);
+  }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.6s ease-in-out;
+}
+
+/* ── Party Popper Confetti ── */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(80px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  animation: confetti-fall 1.2s ease-out forwards;
+}
+
+/* ── Butterfly Wing Flap ── */
+@keyframes wing-flap {
+
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+
+  50% {
+    transform: scaleX(0.3);
+  }
+}
+
+.animate-flap {
+  animation: wing-flap 0.4s ease-in-out infinite;
+}
+
+/* ── Task Complete Celebration ── */
+@keyframes celebrate {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  25% {
+    transform: scale(1.3) rotate(-10deg);
+  }
+
+  50% {
+    transform: scale(1.5) rotate(10deg);
+  }
+
+  75% {
+    transform: scale(1.2) rotate(-5deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-celebrate {
+  animation: celebrate 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* ── Heartbeat ── */
+@keyframes heartbeat {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  14% {
+    transform: scale(1.2);
+  }
+
+  28% {
+    transform: scale(1);
+  }
+
+  42% {
+    transform: scale(1.2);
+  }
+
+  70% {
+    transform: scale(1);
+  }
+}
+
+.animate-heartbeat {
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+/* ── Ripple ── */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  position: absolute;
+  border-radius: 50%;
+  animation: ripple 0.8s ease-out forwards;
+}
+
+/* ── Stagger animation helpers ── */
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+
+.stagger-2 {
+  animation-delay: 0.10s;
+}
+
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+
+.stagger-4 {
+  animation-delay: 0.20s;
+}
+
+.stagger-5 {
+  animation-delay: 0.25s;
+}
+
+.stagger-6 {
+  animation-delay: 0.30s;
+}
+
+/* ── Glow border on cards ── */
+.glow-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(120deg, hsl(var(--vibrant-purple)), hsl(var(--vibrant-cyan)), hsl(var(--vibrant-pink)));
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1.5px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glow-card:hover::before {
+  opacity: 1;
+}
+
+/* ── Neon text ── */
+.neon-text {
+  text-shadow:
+    0 0 10px hsla(var(--vibrant-purple), 0.8),
+    0 0 20px hsla(var(--vibrant-blue), 0.6),
+    0 0 40px hsla(var(--vibrant-cyan), 0.4);
+}
+
+/* ── Magic button hover spark ── */
+.magic-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.magic-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.magic-btn:hover::after {
+  transform: translateX(100%);
+}
+
+.magic-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px hsla(var(--vibrant-purple), 0.5);
+}
+
+/* ── Scrolling marquee of sparkles ── */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
+
+/* ── Subtle card entrance ── */
+.card-enter {
+  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
