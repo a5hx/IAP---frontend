@@ -1,4 +1,17 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
 ﻿src/context/auth.tsx(2,10): error TS2305: Module '"@/lib/api"' has no exported member 'AuthAPI'.
 src/pages/CalendarPage.tsx(8,45): error TS2339: Property 'tasks' does not exist on type 'unknown'.
 src/pages/CoursesPage.tsx(10,49): error TS2339: Property 'courses' does not exist on type 'unknown'.
 src/pages/TasksPage.tsx(11,45): error TS2339: Property 'tasks' does not exist on type 'unknown'.
+<<<<<<< HEAD
+=======
+=======
+﻿src/context/auth.tsx(2,10): error TS2305: Module '"@/lib/api"' has no exported member 'AuthAPI'.
+src/pages/CalendarPage.tsx(8,45): error TS2339: Property 'tasks' does not exist on type 'unknown'.
+src/pages/CoursesPage.tsx(10,49): error TS2339: Property 'courses' does not exist on type 'unknown'.
+src/pages/TasksPage.tsx(11,45): error TS2339: Property 'tasks' does not exist on type 'unknown'.
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649

@@ -275,6 +275,10 @@
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
 .sidebar-gradient {
   background: hsl(var(--sidebar-background));
   border-right: 1px solid hsl(var(--sidebar-border));
@@ -285,6 +289,11 @@
   border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
 .gradient-text {
   background: linear-gradient(135deg, hsl(var(--vibrant-purple)), hsl(var(--vibrant-cyan)));
   -webkit-background-clip: text;
@@ -534,6 +543,10 @@
 
 .dark .rbc-day-bg {
   background: rgba(0, 0, 0, 0.18) !important;
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1003,4 +1016,9 @@
 /* ── Subtle card entrance ── */
 .card-enter {
   animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
 }

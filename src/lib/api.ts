@@ -29,6 +29,10 @@ export function setAuthToken(token: string | null) {
   }
 }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
 // ── 401 interceptor & Offline Fallback ───────────────────────────────────────────
 
 let mockTasks: any[] = [
@@ -37,17 +41,37 @@ let mockTasks: any[] = [
 ];
 let mockCourses: any[] = [];
 let mockFixedSlots: any[] = [];
+<<<<<<< HEAD
+=======
+=======
+// ── 401 interceptor — auto-logout on expired token ───────────────────────────
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
 
 axiosInstance.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
       setAuthToken(null);
+<<<<<<< HEAD
       localStorage.removeItem("schedora-auth-storage");
+=======
+<<<<<<< HEAD
+      localStorage.removeItem("schedora-auth-storage");
+=======
+      // Also clear the Zustand persisted auth so Protected route redirects properly
+      localStorage.removeItem("schedora-auth-storage");
+      // Only redirect if not already on login/signup pages
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
       const path = window.location.pathname;
       if (!["/login", "/signup", "/forgot-password", "/reset-password"].includes(path)) {
         window.location.href = "/login";
       }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
       return Promise.reject(err);
     }
     
@@ -104,6 +128,11 @@ axiosInstance.interceptors.response.use(
       else mockData = { ok: true, status: "mocked" };
 
       return Promise.resolve({ data: mockData, status: 200, statusText: 'OK', headers: {}, config: err.config });
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
     }
     return Promise.reject(err);
   }
@@ -179,10 +208,19 @@ function taskFromBackend(t: any): any {
     planned_end: t.scheduled_end_time ?? null,
     course_id: t.course_id ?? null,
     course: t.course ?? null,
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
     estimated_duration_mins: t.estimated_duration_mins ?? null,
     actual_duration_mins: t.actual_duration_mins ?? null,
     drain_intensity: t.drain_intensity ?? null,
     completed_at: t.completed_at ?? null,
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
   };
 }
 
@@ -218,10 +256,19 @@ function taskToBackend(t: any): any {
     out.course_id = isNaN(parsed) ? null : parsed;
   }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
   if (t.actual_duration_mins !== undefined) out.actual_duration_mins = t.actual_duration_mins;
   if (t.drain_intensity !== undefined) out.drain_intensity = t.drain_intensity;
   if (t.completed_at !== undefined) out.completed_at = t.completed_at;
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
   return out;
 }
 
@@ -284,6 +331,10 @@ async function route(
   // [M1] Login
   if (method === "POST" && path === "/auth/login") {
     const form = new URLSearchParams();
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
     form.append("username", body.login); 
     form.append("password", body.password);
     try {
@@ -311,10 +362,37 @@ async function route(
       }
       throw e;
     }
+<<<<<<< HEAD
+=======
+=======
+    form.append("username", body.login); // backend accepts email OR username
+    form.append("password", body.password);
+    const res = await axiosInstance.post("/auth/login/access-token", form, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+
+    // Auto-detect and save user's timezone after login
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const token = res.data?.access_token;
+      if (tz && token) {
+        await axiosInstance.put("/users/me/timezone", { tz }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch (e) { console.warn("Auto-detect timezone failed", e); }
+
+    return { data: res.data };
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
   }
 
   // [M2] Register
   if (method === "POST" && path === "/auth/signup") {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
     try {
       const res = await axiosInstance.post("/users/", {
         email: body.email,
@@ -329,10 +407,25 @@ async function route(
       }
       throw e;
     }
+<<<<<<< HEAD
+=======
+=======
+    const res = await axiosInstance.post("/users/", {
+      email: body.email,
+      username: body.username,
+      password: body.password,
+    });
+    return { data: res.data };
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
   }
 
   // [M5] Get current user — flatten profile into top-level fields
   if (method === "GET" && path === "/auth/me") {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
     try {
       const res = await axiosInstance.get("/users/me");
       const u = res.data;
@@ -367,6 +460,31 @@ async function route(
       }
       throw e;
     }
+<<<<<<< HEAD
+=======
+=======
+    const res = await axiosInstance.get("/users/me");
+    const u = res.data;
+    const profile = u.profile ?? {};
+    const onboarding = profile.onboarding_data ?? {};
+    return {
+      data: {
+        id: String(u.id),
+        email: u.email,
+        username: u.username,
+        name: profile.full_name || u.username,
+        university: profile.university || "",
+        major: profile.major || "",
+        chronotype: onboarding.chronotype || "balanced",
+        work_style: onboarding.work_style || "mixed",
+        preferred_session_mins: onboarding.preferred_session_mins || 60,
+        avatar_url: null,
+        google_linked: u.google_linked ?? false,
+        profile: profile,
+      },
+    };
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
   }
 
   // [M8] Password recovery
@@ -471,9 +589,18 @@ async function route(
     const id = completeMatch[1];
     const res = await axiosInstance.patch(`/tasks/${id}`, {
       status: "Completed",
+<<<<<<< HEAD
       actual_duration_mins: body.actualMinutes,
       drain_intensity: body.drainIntensity,
       completed_at: new Date().toISOString()
+=======
+<<<<<<< HEAD
+      actual_duration_mins: body.actualMinutes,
+      drain_intensity: body.drainIntensity,
+      completed_at: new Date().toISOString()
+=======
+>>>>>>> 9137b811872796b8f1aed4f7ae2c5ce35dbbe851
+>>>>>>> 3b3179d8532040d7541f19a509a6714c3f120649
     });
     return { data: taskFromBackend(res.data) };
   }
