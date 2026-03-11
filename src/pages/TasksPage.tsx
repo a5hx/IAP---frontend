@@ -1,19 +1,32 @@
 import { useState, useEffect } from "react";
 import { useTaskStore, Task } from "@/stores/useTaskStore";
 import ScheduleDialog from "@/components/ScheduleDialog";
+import TaskFeedbackDialog from "@/components/TaskFeedbackDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, CheckCircle, Search, ClipboardList } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, Edit, Trash2, CheckCircle, Search, ClipboardList, Sparkles, Loader2, RotateCcw, PartyPopper } from "lucide-react";
+import { format, addHours, setHours, setMinutes } from "date-fns";
+import { toast } from "sonner";
+import { Confetti } from "@/components/Confetti";
+import { TaskCardSkeleton } from "@/components/Skeleton";
+import { rankTasksForGap } from "@/lib/scheduling";
+import GapFillerModal from "@/components/GapFillerModal";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function TasksPage() {
     const { tasks, fetchTasks, deleteTask, completeTask, isLoading } = useTaskStore();
     const [openSchedule, setOpenSchedule] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
+    const [taskForFeedback, setTaskForFeedback] = useState<Task | undefined>(undefined);
+    const [openFeedback, setOpenFeedback] = useState(false);
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [search, setSearch] = useState("");
+    const [dialogMode, setDialogMode] = useState<"manual" | "ai">("manual");
+    const [confettiActive, setConfettiActive] = useState(false);
+    const [gapTaskSuggestion, setGapTaskSuggestion] = useState<Task | null>(null);
+    const { updateTask } = useTaskStore();
 
     useEffect(() => {
         fetchTasks();
@@ -29,8 +42,44 @@ export default function TasksPage() {
         setSelectedTask(task);
         setOpenSchedule(true);
     };
-    const handleDelete = async (id: string) => await deleteTask(id);
-    const handleComplete = async (id: string) => await completeTask(id);
+    
+    const handleDelete = async (id: string) => {
+        await deleteTask(id);
+    };
+
+    const handleRestore = async (id: string) => {
+        await updateTask(id, { status: "pending" });
+        toast.success("Task restored to pending.");
+    }
+
+    const handleComplete = (task: Task) => {
+         setTaskForFeedback(task);
+         setOpenFeedback(true);
+    };
+
+    const handleFeedbackComplete = async (actualMinutes: number, drainIntensity: number, contextNotes: string[]) => {
+        if(!taskForFeedback) return;
+        
+        const plannedMins = taskForFeedback.estimated_duration_mins || 60;
+        const gap = plannedMins - actualMinutes;
+
+        await completeTask(taskForFeedback.id, { actualMinutes, drainIntensity, contextNotes });
+        setConfettiActive(true);
+        setOpenFeedback(false);
+        setTaskForFeedback(undefined);
+
+        if (gap >= 15) {
+            const pendingTasks = tasks.filter(t => t.status === "pending" && t.id !== taskForFeedback.id);
+            const bestTask = rankTasksForGap(gap, pendingTasks);
+            if (bestTask) {
+                setGapTaskSuggestion(bestTask);
+            } else {
+                toast.success('🎊 Task completed! Great work!');
+            }
+        } else {
+            toast.success('🎊 Task completed! Great work!');
+        }
+    };
 
     const categoryColor = (cat: string) => {
         switch (cat) {
@@ -48,21 +97,35 @@ export default function TasksPage() {
         }
     };
 
+
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+            {/* 🎉 Confetti celebration */}
+            <Confetti active={confettiActive} onDone={() => setConfettiActive(false)} />
+
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-slide-up">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
+                    <h1 className="text-3xl font-bold tracking-tight gradient-text">✅ My Tasks</h1>
                     <p className="text-muted-foreground">Manage your assignments and to-dos.</p>
                 </div>
-                <Button
-                    onClick={() => { setSelectedTask(undefined); setOpenSchedule(true); }}
-                    className="rounded-xl shadow-neon transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-                >
-                    <Plus className="mr-1.5 h-4 w-4" />
-                    Add Task
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        onClick={() => { setSelectedTask(undefined); setDialogMode("ai"); setOpenSchedule(true); }}
+                        className="rounded-xl shadow-md transition-all duration-200 bg-vibrant-purple hover:bg-vibrant-purple/90 text-white magic-btn border border-vibrant-purple/50"
+                    >
+                        <Sparkles className="mr-1.5 h-4 w-4 animate-twinkle text-white" />
+                        ✨ Smart Schedule
+                    </Button>
+                    <Button
+                        onClick={() => { setSelectedTask(undefined); setDialogMode("manual"); setOpenSchedule(true); }}
+                        className="rounded-xl shadow-neon transition-all duration-200 hover:-translate-y-0.5 active:scale-95 magic-btn animate-pulse-glow"
+                    >
+                        <Plus className="mr-1.5 h-4 w-4" />
+                        Add Task
+                    </Button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -107,7 +170,7 @@ export default function TasksPage() {
                     </div>
                     {!search && filterStatus === "all" && (
                         <Button
-                            onClick={() => { setSelectedTask(undefined); setOpenSchedule(true); }}
+                            onClick={() => { setSelectedTask(undefined); setDialogMode("manual"); setOpenSchedule(true); }}
                             className="rounded-xl mt-2"
                         >
                             <Plus className="mr-1.5 h-4 w-4" />
@@ -115,45 +178,79 @@ export default function TasksPage() {
                         </Button>
                     )}
                 </div>
+            ) : isLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <TaskCardSkeleton key={i} />
+                    ))}
+                </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {filteredTasks.map((task, i) => (
                         <Card
                             key={task.id}
-                            className="group relative overflow-hidden rounded-2xl border-border/50 bg-card border-border hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 hover:-translate-y-0.5 animate-fade-in"
-                            style={{ animationDelay: `${i * 40}ms` }}
+                            className={`group relative overflow-hidden rounded-2xl border border-border/50 glass-card hover:shadow-xl hover:shadow-primary/15 transition-all duration-300 hover:-translate-y-1.5 animate-slide-up glow-card ${
+                                task.status === 'completed'
+                                    ? 'border-vibrant-green/30 bg-gradient-to-br from-vibrant-green/5 to-transparent'
+                                    : task.status === 'dropped'
+                                    ? 'opacity-50'
+                                    : ''
+                            }`}
+                            style={{ animationDelay: `${i * 60}ms` }}
                         >
+                            {/* Shimmer streak on hover */}
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%)', backgroundSize: '200% 100%' }} />
+
                             <CardHeader className="pb-3">
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="space-y-1.5 min-w-0">
-                                        <CardTitle className="text-base font-semibold truncate">{task.title}</CardTitle>
+                                        <CardTitle className={`text-base font-semibold truncate ${ task.status === 'completed' ? 'line-through text-muted-foreground' : '' }`}>
+                                            {task.status === 'completed' && <span className="not-italic mr-1">✅</span>}
+                                            {task.title}
+                                        </CardTitle>
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide ${categoryColor(task.category)}`}>
-                                                {task.category}
+                                                {task.category === 'exam' ? '📝 ' : task.category === 'assignment' ? '📘 ' : '🎯 '}{task.category}
                                             </span>
                                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                                <span className={`h-1.5 w-1.5 rounded-full ${priorityDot(task.priority)}`} />
-                                                {task.priority}
+                                                <span className={`h-2 w-2 rounded-full animate-twinkle ${priorityDot(task.priority)}`} style={{ animationDelay: `${i * 0.3}s` }} />
+                                                {task.priority === 'high' ? '🔥 ' : task.priority === 'medium' ? '⚡ ' : '🌿 '}{task.priority}
                                             </span>
                                         </div>
                                     </div>
+                                    {/* Completed badge */}
+                                    {task.status === 'completed' && (
+                                        <span className="shrink-0 text-lg animate-bounce-in" title="Completed!">🏆</span>
+                                    )}
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-0">
                                 <p className="text-xs text-muted-foreground">
-                                    Due {format(new Date(task.deadline), "MMM d, yyyy · h:mm a")}
+                                    📅 Due {format(new Date(task.deadline), "MMM d, yyyy · h:mm a")}
                                 </p>
+                                {/* Priority gradient bar */}
+                                <div className={`priority-bar priority-bar-${task.priority}`} />
+                                {task.planned_start && (
+                                    <p className="text-xs text-vibrant-blue mt-1 font-medium">
+                                        🕐 Scheduled: {format(new Date(task.planned_start), "MMM d, h:mm a")}
+                                    </p>
+                                )}
                                 {/* Actions */}
                                 <div className="flex justify-end gap-1 mt-4 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0">
                                     {task.status !== "completed" && (
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30" onClick={() => handleComplete(task.id)} title="Complete">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 hover:scale-110 transition-transform" onClick={() => handleComplete(task)} title="Mark Complete">
                                             <CheckCircle className="h-4 w-4 text-green-600" />
                                         </Button>
                                     )}
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => handleEdit(task)} title="Edit">
+                                    {task.status === "completed" && (
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:scale-110 transition-transform" onClick={() => handleRestore(task.id)} title="Restore to Pending">
+                                            <RotateCcw className="h-4 w-4 text-orange-600" />
+                                        </Button>
+                                    )}
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:scale-110 transition-transform" onClick={() => handleEdit(task)} title="Edit">
                                         <Edit className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30" onClick={() => handleDelete(task.id)} title="Delete">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 hover:scale-110 transition-transform" onClick={() => handleDelete(task.id)} title="Delete">
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
                                 </div>
@@ -170,6 +267,29 @@ export default function TasksPage() {
                     if (!open) setSelectedTask(undefined);
                 }}
                 taskToEdit={selectedTask}
+                defaultMode={dialogMode}
+            />
+
+            <TaskFeedbackDialog
+               open={openFeedback}
+               onOpenChange={(open) => {
+                   setOpenFeedback(open);
+                   if (!open) setTaskForFeedback(undefined);
+               }}
+               task={taskForFeedback}
+               onComplete={handleFeedbackComplete}
+            />
+
+            <GapFillerModal 
+                open={!!gapTaskSuggestion}
+                onOpenChange={(open) => !open && setGapTaskSuggestion(null)}
+                gapMinutes={30} // default for simplicity in this view
+                suggestedTask={gapTaskSuggestion}
+                onAccept={async (task) => {
+                    await updateTask(task.id, { planned_start: new Date().toISOString() });
+                    setGapTaskSuggestion(null);
+                    toast.success("Task pulled forward!");
+                }}
             />
         </div>
     );

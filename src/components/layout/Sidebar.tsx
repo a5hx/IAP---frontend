@@ -13,6 +13,8 @@ import {
     GraduationCap,
     ChevronLeft,
     ChevronRight,
+    BarChart3,
+    Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -29,6 +31,8 @@ const navItems = [
     { icon: Calendar, label: "Calendar", href: "/calendar" },
     { icon: ListTodo, label: "Tasks", href: "/tasks" },
     { icon: Columns3, label: "Kanban", href: "/kanban" },
+    { icon: BarChart3, label: "Analytics", href: "/analytics" },
+    { icon: Brain, label: "Memory", href: "/memory-rules" },
     { icon: BookOpen, label: "Courses", href: "/courses" },
     { icon: Settings, label: "Settings", href: "/settings" },
 ];
@@ -36,11 +40,11 @@ const navItems = [
 function SidebarBrand({ collapsed }: { collapsed: boolean }) {
     return (
         <div className="flex items-center gap-3 px-3 py-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 ring-1 ring-primary/20">
                 <GraduationCap className="h-5 w-5" />
             </div>
             {!collapsed && (
-                <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-vibrant-purple bg-clip-text animate-fade-in">
+                <span className="text-lg font-bold tracking-tight text-sidebar-foreground animate-fade-in">
                     Schedora
                 </span>
             )}
@@ -60,8 +64,8 @@ function NavItem({ item, collapsed, isMobile }: { item: typeof navItems[0]; coll
             className={cn(
                 "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 isActive
-                    ? "bg-primary/15 text-primary font-bold shadow-sm ring-1 ring-primary/20"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    ? "bg-sidebar-accent text-sidebar-foreground font-bold shadow-sm ring-1 ring-sidebar-border"
+                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                 collapsed && !isMobile && "justify-center px-2"
             )}
         >
@@ -110,7 +114,7 @@ export function Sidebar() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 p-0 border-r-0">
-                    <div className="flex flex-col h-full bg-sidebar p-4">
+                    <div className="flex flex-col h-full bg-sidebar-background p-4">
                         <SidebarBrand collapsed={false} />
                         <Separator className="my-3 opacity-50" />
                         <nav className="flex-1 space-y-1">
@@ -119,7 +123,7 @@ export function Sidebar() {
                             ))}
                         </nav>
                         <div className="mt-auto pt-4">
-                            <div className="rounded-xl bg-gradient-to-br from-primary/10 to-vibrant-blue/20 p-4">
+                            <div className="rounded-xl bg-gradient-to-br from-primary/10 to-vibrant-blue/20 p-4 border border-primary/20">
                                 <p className="text-xs font-medium text-foreground/80">✨ Stay consistent</p>
                                 <p className="text-[11px] text-muted-foreground mt-1">Small steps lead to big results.</p>
                             </div>
@@ -131,7 +135,7 @@ export function Sidebar() {
             {/* Desktop sidebar */}
             <aside
                 className={cn(
-                    "hidden lg:flex flex-col fixed left-0 top-0 z-40 h-screen border-r bg-sidebar/80 backdrop-blur-xl transition-all duration-300 ease-in-out",
+                    "hidden lg:flex flex-col fixed left-0 top-0 z-40 h-screen border-r sidebar-gradient backdrop-blur-xl transition-all duration-300 ease-in-out",
                     collapsed ? "w-[68px]" : "w-60"
                 )}
             >

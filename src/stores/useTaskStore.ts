@@ -11,6 +11,10 @@ export type Task = {
     priority: "low" | "medium" | "high"
     planned_start?: string | null
     planned_end?: string | null
+    estimated_duration_mins?: number
+    actual_duration_mins?: number
+    drain_intensity?: number
+    completed_at?: string
 }
 
 interface TaskState {

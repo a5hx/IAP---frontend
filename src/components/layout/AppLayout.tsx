@@ -24,6 +24,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { MagicDecorations } from "@/components/MagicDecorations";
+import { AuroraBackground } from "@/components/AuroraBackground";
 
 import morningAvatar from "@/assets/avatars/morning.svg";
 import balancedAvatar from "@/assets/avatars/balanced.svg";
@@ -64,6 +66,8 @@ export function AppLayout() {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex">
+            <AuroraBackground />
+            <MagicDecorations />
             <Sidebar />
             <main className="flex-1 min-w-0 lg:pl-[68px] transition-all duration-300 ease-in-out">
                 {/* Top Bar */}
@@ -159,7 +163,7 @@ export function AppLayout() {
                     </div>
                 </div>
 
-                <div className="p-6 md:p-8 max-w-7xl mx-auto animate-fade-in">
+                <div className="p-6 md:p-8 max-w-7xl mx-auto page-enter">
                     <Outlet />
                 </div>
             </main>
