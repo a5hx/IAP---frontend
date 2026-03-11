@@ -15,7 +15,7 @@ interface TaskFeedbackDialogProps {
 
 export default function TaskFeedbackDialog({ open, onOpenChange, task, onComplete }: TaskFeedbackDialogProps) {
   const [actualTime, setActualTime] = useState<string>("");
-  const [drain, setDrain] = useState<number>(3);
+  const [drain, setDrain] = useState<number>(5);
   const [contextNotes, setContextNotes] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,7 +33,7 @@ export default function TaskFeedbackDialog({ open, onOpenChange, task, onComplet
       await onComplete(Number(actualTime), drain, contextNotes);
       onOpenChange(false);
       setActualTime("");
-      setDrain(3);
+      setDrain(5);
       setContextNotes([]);
     } finally {
       setIsSubmitting(false);
@@ -65,30 +65,25 @@ export default function TaskFeedbackDialog({ open, onOpenChange, task, onComplet
           </div>
 
           <div className="space-y-3">
-            <div className="flex justify-between items-center">
-                <Label className="text-secondary-foreground font-semibold">Drain Intensity</Label>
-                <span className="text-xs text-muted-foreground font-medium bg-secondary px-2 py-1 rounded-full">
-                    {drain === 1 && "Very Low"}
-                    {drain === 2 && "Low"}
-                    {drain === 3 && "Medium"}
-                    {drain === 4 && "High"}
-                    {drain === 5 && "Exhausting"}
+            <div className="flex justify-between items-center mb-2">
+                <Label className="text-secondary-foreground font-semibold">Drain Intensity (0 - 10)</Label>
+                <span className="text-sm font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">
+                    {drain}
                 </span>
             </div>
-            <div className="flex gap-2 justify-between">
-              {[1, 2, 3, 4, 5].map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setDrain(level)}
-                  className={`flex-1 h-12 rounded-xl flex items-center justify-center transition-all ${
-                    drain === level 
-                      ? 'bg-primary text-primary-foreground shadow-md scale-105' 
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  {level <= 2 ? <Battery className="w-5 h-5" /> : level === 3 ? <BatteryMedium className="w-5 h-5" /> : <BatteryWarning className="w-5 h-5" />}
-                </button>
-              ))}
+            <div className="flex flex-col gap-2 relative pt-2">
+                <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    value={drain}
+                    onChange={(e) => setDrain(Number(e.target.value))}
+                    className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground px-1 mt-1">
+                    <span>0: Effortless</span>
+                    <span>10: Exhausting</span>
+                </div>
             </div>
           </div>
 

@@ -18,19 +18,6 @@ import { AlertTriangle, Info } from "lucide-react";
 type Category = "exam" | "assignment" | "extra";
 type Priority = "low" | "medium" | "high";
 
-// Mock AI function
-async function mockAIEstimate(title: string, category: Category, priority: Priority): Promise<number> {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      let base = 60;
-      if (category === "exam") base += 120;
-      else if (category === "assignment") base += 60;
-      if (priority === "high") base *= 1.5;
-      if (title.toLowerCase().includes("final") || title.toLowerCase().includes("project")) base += 180;
-      resolve(Math.round(base));
-    }, 800);
-  });
-}
 
 
 export default function ScheduleDialog({
@@ -53,10 +40,7 @@ export default function ScheduleDialog({
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("23:59");
   const [courseId, setCourseId] = useState("other");
-  const [estimatedDuration, setEstimatedDuration] = useState<number | "">("");
-  const [isEstimating, setIsEstimating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [showDecomposePrompt, setShowDecomposePrompt] = useState(false);
   const [conflict, setConflict] = useState<{ type: 'task' | 'fixed', title: string } | null>(null);
 
   useEffect(() => { fetchCourses(); }, []);
@@ -79,14 +63,11 @@ export default function ScheduleDialog({
         setStartTime("");
       }
       setCourseId(taskToEdit.course_id || "other");
-      setEstimatedDuration(taskToEdit.estimated_duration_mins || "");
     } else {
       setTitle(""); setDescription(""); setCategory("assignment");
       setPriority("medium"); setDate(undefined); setStartTime(""); setEndTime("23:59"); setCourseId("other");
-      setEstimatedDuration("");
     }
     setErr(null);
-    setShowDecomposePrompt(false);
     setConflict(null);
   }, [taskToEdit, open]);
 
@@ -214,33 +195,10 @@ export default function ScheduleDialog({
           }
       }
 
-      if (estimatedDuration && Number(estimatedDuration) > 180 && !showDecomposePrompt && !taskToEdit) {
-        setShowDecomposePrompt(true);
-        return;
-      }
-
-      if (showDecomposePrompt) {
-         // Handle decomposition
-         const chunks = Math.ceil(Number(estimatedDuration) / 60);
-         for (let i = 0; i < chunks; i++) {
-           const payload: any = {
-             category, priority, title: `${title.trim()} (Part ${i + 1}/${chunks})`, description: description.trim(),
-             deadline: deadline.toISOString(), estimated_duration_mins: 60
-           };
-           if (planned_start) payload.planned_start = planned_start;
-           if (courseId !== "other") payload.course_id = courseId;
-           await addTask(payload);
-         }
-         onOpenChange(false);
-         setShowDecomposePrompt(false);
-         return;
-      }
-
       const payload: any = {
         category, priority, title: title.trim(), description: description.trim(),
         deadline: deadline.toISOString(),
       };
-      if (estimatedDuration) payload.estimated_duration_mins = Number(estimatedDuration);
       if (planned_start) payload.planned_start = planned_start;
       if (courseId !== "other") payload.course_id = courseId;
 
@@ -257,22 +215,6 @@ export default function ScheduleDialog({
     }
   }
 
-  async function handleAIEstimate() {
-      if (!title.trim()) {
-          setErr("Please enter a title first for AI estimation.");
-          return;
-      }
-      setIsEstimating(true);
-      setErr(null);
-      try {
-          const duration = await mockAIEstimate(title, category, priority);
-          setEstimatedDuration(duration);
-      } catch(e) {
-          setErr("Failed to estimate time.");
-      } finally {
-          setIsEstimating(false);
-      }
-  }
 
   const categoryEmoji = { exam: "📝", assignment: "📋", extra: "🎭" };
   const priorityEmoji = { low: "🟢", medium: "🟡", high: "🔴" };
@@ -369,37 +311,12 @@ export default function ScheduleDialog({
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add details..." className="rounded-xl resize-none h-24" />
           </div>
 
-          {/* Row 5: AI Tools */}
-          <div className="flex items-end gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
-              <div className="space-y-2 flex-1">
-                 <Label className="text-xs font-semibold uppercase tracking-wider text-primary">Estimated Duration (mins)</Label>
-                 <Input type="number" value={estimatedDuration} onChange={(e) => {
-                     setEstimatedDuration(e.target.value ? Number(e.target.value) : "");
-                     setShowDecomposePrompt(false);
-                 }} placeholder="e.g. 120" className="rounded-xl" />
-              </div>
-              <Button type="button" variant="secondary" onClick={handleAIEstimate} disabled={isEstimating} className="rounded-xl flex-shrink-0 bg-primary/10 hover:bg-primary/20 text-primary">
-                  {isEstimating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "✨ Magic Estimate"}
-              </Button>
-          </div>
-
-          {showDecomposePrompt && (
-              <div className="p-4 rounded-xl bg-vibrant-orange/10 border border-vibrant-orange/20 animate-fade-in">
-                  <p className="text-sm font-semibold text-vibrant-orange mb-2">High Burden Task Detected! (&gt; 3 hrs)</p>
-                  <p className="text-sm text-vibrant-orange/80 mb-3">Would you like the AI to break this down into smaller, manageable 1-hour chunks?</p>
-                  <div className="flex gap-2">
-                      <Button size="sm" onClick={() => setShowDecomposePrompt(false)} variant="outline" className="rounded-lg border-vibrant-orange/20 text-vibrant-orange/80 bg-vibrant-orange/5 hover:bg-vibrant-orange/10">No, keep as one</Button>
-                      <Button size="sm" onClick={handleSubmit} className="rounded-lg bg-vibrant-orange hover:bg-vibrant-orange/90 text-white shadow-neon shadow-vibrant-orange/30">Yes, break it down</Button>
-                  </div>
-              </div>
-          )}
-
           {err && <div className="text-sm font-medium text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{err}</div>}
         </div>
 
         <DialogFooter className="border-t border-border pt-4">
           <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="rounded-xl" onClick={handleSubmit} disabled={isLoading || !title.trim() || !date || !!conflict || (showDecomposePrompt === true)}>
+          <Button className="rounded-xl" onClick={handleSubmit} disabled={isLoading || !title.trim() || !date || !!conflict}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {taskToEdit ? "Update" : "Save"}
           </Button>
