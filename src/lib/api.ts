@@ -305,19 +305,15 @@ async function route(
     const form = new URLSearchParams();
     form.append("username", body.login); 
     form.append("password", body.password);
-    const res = await axiosInstance.post("/auth/login/access-token", form, {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
-    // OTP step — backend returns {status:"otp_pending", email} instead of a token
-    if (res.data?.status === "otp_pending") {
-      return { data: res.data };
-    }
-    // Normal token response (should not happen now, but keep as fallback)
     try {
       const res = await axiosInstance.post("/auth/login/access-token", form, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
-
+      // OTP step — backend returns {status:"otp_pending", email} instead of a token
+      if (res.data?.status === "otp_pending") {
+        return { data: res.data };
+      }
+      // Normal token response (fallback if OTP is disabled)
       try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const token = res.data?.access_token;
@@ -329,7 +325,6 @@ async function route(
       } catch (e) {
         console.warn("Auto-detect timezone failed", e);
       }
-
       return { data: res.data };
     } catch (e: any) {
       if (e.code === 'ECONNABORTED' || e.message === 'Network Error' || e.code === 'ERR_NETWORK') {
@@ -338,6 +333,15 @@ async function route(
       }
       throw e;
     }
+  }
+
+  // [M1b] Verify OTP — complete the 2-step login
+  if (method === "POST" && path === "/auth/verify-otp") {
+    const res = await axiosInstance.post("/auth/login/verify-otp", {
+      email: body.email,
+      otp: body.otp,
+    });
+    return { data: res.data };
   }
 
   // [M2] Register
