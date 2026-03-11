@@ -6,14 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Sparkles, Clock, CalendarDays } from "lucide-react";
 import { useTaskStore } from "@/stores/useTaskStore";
 import { DatePicker } from "@/components/DatePicker";
-import { format, isBefore, isAfter, addMinutes, setHours, setMinutes } from "date-fns";
+import { format, isBefore, isAfter, addMinutes, addDays, setHours, setMinutes } from "date-fns";
 import { api } from "@/lib/api";
 import { hasConflict } from "@/lib/scheduling";
 import { toast } from "sonner";
-import { AlertTriangle, Info } from "lucide-react";
+import { AlertTriangle, Info, Bot } from "lucide-react";
 
 type Category = "exam" | "assignment" | "extra";
 type Priority = "low" | "medium" | "high";
@@ -40,6 +41,12 @@ export default function ScheduleDialog({
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("23:59");
   const [courseId, setCourseId] = useState("other");
+  const [scheduleMode, setScheduleMode] = useState<"manual" | "ai">("manual");
+  const [periodStart, setPeriodStart] = useState<Date | undefined>(new Date());
+  const [periodEnd, setPeriodEnd] = useState<Date | undefined>(addDays(new Date(), 7));
+  const [estimatedDurationMins, setEstimatedDurationMins] = useState<number | "">("");
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [aiReasoning, setAiReasoning] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [conflict, setConflict] = useState<{ type: 'task' | 'fixed', title: string } | null>(null);
 
@@ -66,6 +73,12 @@ export default function ScheduleDialog({
     } else {
       setTitle(""); setDescription(""); setCategory("assignment");
       setPriority("medium"); setDate(undefined); setStartTime(""); setEndTime("23:59"); setCourseId("other");
+      setCourseId("other");
+      setScheduleMode("manual");
+      setEstimatedDurationMins("");
+      setAiReasoning(null);
+      setPeriodStart(new Date());
+      setPeriodEnd(addDays(new Date(), 7));
     }
     setErr(null);
     setConflict(null);
@@ -74,7 +87,7 @@ export default function ScheduleDialog({
   // Proactive Conflict Check
   useEffect(() => {
     const checkConflicts = async () => {
-        if (!date || !startTime) {
+        if (scheduleMode === "ai" || !date || !startTime) {
             setConflict(null);
             return;
         }
@@ -130,51 +143,86 @@ export default function ScheduleDialog({
 
     const timer = setTimeout(checkConflicts, 400);
     return () => clearTimeout(timer);
-  }, [date, startTime, endTime, taskToEdit]);
+  }, [date, startTime, endTime, taskToEdit, scheduleMode]);
+
+  async function handleAIEstimate() {
+      if (!title.trim() || !description.trim()) {
+          setErr("Please enter a title and description for AI estimation.");
+          return;
+      }
+      if (courseId === "other") {
+          setErr("Please select a specific course for better AI estimation.");
+          return;
+      }
+      setIsEstimating(true);
+      setErr(null);
+      setAiReasoning(null);
+      try {
+          const res = await api.post("/tasks/estimate-duration", {
+              course_id: Number(courseId),
+              task_type: category === "extra" ? "Extracurricular" : category === "exam" ? "Exam" : "Assignment",
+              difficulty: priority === "low" ? "Easy" : priority === "high" ? "Hard" : "Medium",
+              description: title + "\n" + description,
+          });
+          setEstimatedDurationMins(res.data.estimated_duration_mins);
+          setAiReasoning(res.data.reasoning);
+      } catch(e: any) {
+          const detail = e?.response?.data?.detail;
+          setErr(detail || "Failed to estimate time.");
+      } finally {
+          setIsEstimating(false);
+      }
+  }
 
   async function handleSubmit() {
     setErr(null);
     if (!title.trim()) { setErr("Title is required."); return; }
-    if (!date) { setErr("Due date is required."); return; }
-
-    // Build deadline datetime
-    const deadline = new Date(date);
-    const [eh, em] = endTime.split(":").map(Number);
-    deadline.setHours(eh, em, 0, 0);
-
-    // Validate: deadline must not be in the past
-    if (deadline.getTime() < Date.now()) {
-      setErr("Deadline cannot be in the past.");
-      return;
-    }
-
-    // Build planned_start if provided
+    
+    let deadlineIso = "";
     let planned_start: string | undefined;
-    if (startTime) {
-      const start = new Date(date);
-      const [sh, sm] = startTime.split(":").map(Number);
-      start.setHours(sh, sm, 0, 0);
 
-      if (start.getTime() < Date.now()) {
-        setErr("Start time cannot be in the past.");
+    if (scheduleMode === "manual") {
+      if (!date) { setErr("Due date is required."); return; }
+
+      const deadline = new Date(date);
+      const [eh, em] = endTime.split(":").map(Number);
+      deadline.setHours(eh, em, 0, 0);
+
+      if (deadline.getTime() < Date.now()) {
+        setErr("Deadline cannot be in the past.");
         return;
       }
-      if (start.getTime() >= deadline.getTime()) {
-        setErr("Start time must be before the deadline.");
-        return;
+      deadlineIso = deadline.toISOString();
+
+      if (startTime) {
+        const start = new Date(date);
+        const [sh, sm] = startTime.split(":").map(Number);
+        start.setHours(sh, sm, 0, 0);
+
+        if (start.getTime() < Date.now()) {
+          setErr("Start time cannot be in the past.");
+          return;
+        }
+        if (start.getTime() >= deadline.getTime()) {
+          setErr("Start time must be before the deadline.");
+          return;
+        }
+        planned_start = start.toISOString();
       }
-      planned_start = start.toISOString();
+    } else {
+      if (!periodEnd) { setErr("End date is required."); return; }
+      deadlineIso = periodEnd.toISOString();
     }
 
     try {
-      // Conflict Resolution: Check if this overlaps with existing tasks or fixed events
-      if (planned_start) {
+      if (scheduleMode === "manual" && planned_start) {
           try {
               const res = await api.get("/schedule/fixed");
               const fixedSlots = res.data || [];
+              const deadlineObj = new Date(deadlineIso);
               const isConflicting = hasConflict(
                   new Date(planned_start),
-                  deadline,
+                  deadlineObj,
                   useTaskStore.getState().tasks.filter(t => t.id !== taskToEdit?.id),
                   fixedSlots
               );
@@ -197,9 +245,10 @@ export default function ScheduleDialog({
 
       const payload: any = {
         category, priority, title: title.trim(), description: description.trim(),
-        deadline: deadline.toISOString(),
+        deadline: deadlineIso,
       };
       if (planned_start) payload.planned_start = planned_start;
+      if (estimatedDurationMins) payload.estimated_duration_mins = Number(estimatedDurationMins);
       if (courseId !== "other") payload.course_id = courseId;
 
       if (taskToEdit) { await updateTask(taskToEdit.id, payload); }
@@ -221,15 +270,29 @@ export default function ScheduleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[680px] rounded-2xl border border-border bg-card text-card-foreground shadow-2xl">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[680px] rounded-2xl border border-border bg-card text-card-foreground shadow-2xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
+        <DialogHeader className="p-6 pb-2 shrink-0">
           <DialogTitle className="text-xl font-bold text-foreground">{taskToEdit ? "Edit Task" : "Schedule Task"}</DialogTitle>
           <DialogDescription className="text-muted-foreground">
             {taskToEdit ? "Update the details of your task." : "Add a new task, assignment, or exam."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-5 py-4">
+        <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-5 custom-scrollbar">
+          {!taskToEdit && (
+            <Tabs value={scheduleMode} onValueChange={(v) => setScheduleMode(v as "manual" | "ai")} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 rounded-xl h-11 bg-secondary/50 p-1">
+                <TabsTrigger value="manual" className="rounded-lg font-medium">
+                   <CalendarDays className="w-4 h-4 mr-2" /> Manual Schedule
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="rounded-lg font-medium text-vibrant-purple data-[state=active]:bg-vibrant-purple/10 data-[state=active]:text-vibrant-purple">
+                   <Sparkles className="w-4 h-4 mr-2" /> AI Schedule
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+
+          <div className="grid gap-5 py-2">
           {/* Row 1: Category, Priority, Subject */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
@@ -274,23 +337,36 @@ export default function ScheduleDialog({
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task title" className="rounded-xl h-11" />
           </div>
 
-          {/* Row 3: Date, Start Time, End Time */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Due Date</Label>
-              <DatePicker date={date} setDate={setDate} disablePast />
+          {/* Row 3: Timings based on mode */}
+          {scheduleMode === "manual" ? (
+            <div className="grid grid-cols-3 gap-4 animate-in fade-in slide-in-from-top-2">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Due Date</Label>
+                <DatePicker date={date} setDate={setDate} disablePast />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Start Time</Label>
+                <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="rounded-xl h-10" placeholder="Optional" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Deadline Time</Label>
+                <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="rounded-xl h-10" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Start Time</Label>
-              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="rounded-xl h-10" placeholder="Optional" />
+          ) : (
+            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 p-4 rounded-xl bg-vibrant-purple/5 border border-vibrant-purple/10">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-vibrant-purple/70">Time Range (Start Date)</Label>
+                <DatePicker date={periodStart} setDate={setPeriodStart} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-vibrant-purple/70">Time Range (End Date)</Label>
+                <DatePicker date={periodEnd} setDate={setPeriodEnd} />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Deadline Time</Label>
-              <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="rounded-xl h-10" />
-            </div>
-          </div>
+          )}
 
-          {conflict && (
+          {conflict && scheduleMode === "manual" && (
             <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 animate-in fade-in slide-in-from-top-1">
                 <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
@@ -307,16 +383,64 @@ export default function ScheduleDialog({
 
           {/* Row 4: Description */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Description</Label>
+            <div className="flex justify-between items-center">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Description</Label>
+                {scheduleMode === "ai" && (
+                   <span className="text-[10px] text-vibrant-purple animate-pulse flex items-center bg-vibrant-purple/10 px-2 py-0.5 rounded-full">
+                     <Info className="w-3 h-3 mr-1" /> Highly recommended for AI to estimate accurately
+                   </span>
+                )}
+            </div>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add details..." className="rounded-xl resize-none h-24" />
           </div>
 
+          {scheduleMode === "ai" && (
+            <div className="space-y-3 animate-in fade-in zoom-in-95 duration-200">
+               <div className="flex items-end gap-3 p-4 rounded-xl bg-secondary/30 border border-border">
+                  <div className="flex-1 space-y-2">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-primary flex items-center">
+                          <Clock className="w-3 h-3 mr-1" /> Estimated Duration (Mins)
+                      </Label>
+                      <Input 
+                          type="number" 
+                          value={estimatedDurationMins} 
+                          onChange={(e) => setEstimatedDurationMins(e.target.value ? Number(e.target.value) : "")}
+                          placeholder="Wait for estimate or enter manually..."
+                          className="rounded-xl border-primary/20 bg-background"
+                      />
+                  </div>
+                  <Button 
+                      type="button" 
+                      onClick={handleAIEstimate} 
+                      disabled={isEstimating || !title.trim() || courseId === "other"} 
+                      className="rounded-xl shadow-md bg-gradient-to-r from-vibrant-purple to-primary text-white hover:opacity-90"
+                  >
+                      {isEstimating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bot className="w-4 h-4 mr-2" />}
+                      Estimate Duration
+                  </Button>
+               </div>
+               {aiReasoning && (
+                  <div className="p-4 rounded-xl bg-vibrant-purple/5 border border-vibrant-purple/20 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                         <Sparkles className="w-12 h-12 text-vibrant-purple" />
+                      </div>
+                      <div className="flex items-center gap-2 mb-2">
+                          <Bot className="w-4 h-4 text-vibrant-purple" />
+                          <span className="text-sm font-bold text-foreground">AI Reasoning</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed relative z-10 whitespace-pre-wrap">{aiReasoning}</p>
+                  </div>
+               )}
+            </div>
+          )}
+
           {err && <div className="text-sm font-medium text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{err}</div>}
         </div>
+        </div>
 
-        <DialogFooter className="border-t border-border pt-4">
+        <DialogFooter className="border-t border-border p-4 bg-muted/20 shrink-0">
           <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="rounded-xl" onClick={handleSubmit} disabled={isLoading || !title.trim() || !date || !!conflict}>
+          <Button className="rounded-xl shadow-md" onClick={handleSubmit} disabled={isLoading || !title.trim() || (scheduleMode === "manual" ? (!date || !!conflict) : (!periodStart || !periodEnd))}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {taskToEdit ? "Update" : "Save"}
           </Button>
