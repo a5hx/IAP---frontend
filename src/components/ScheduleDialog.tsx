@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, Sparkles, Clock, CalendarDays } from "lucide-react";
 import { useTaskStore } from "@/stores/useTaskStore";
 import { DatePicker } from "@/components/DatePicker";
@@ -25,10 +26,12 @@ export default function ScheduleDialog({
   open,
   onOpenChange,
   taskToEdit,
+  defaultMode = "manual",
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   taskToEdit?: any;
+  defaultMode?: "manual" | "ai";
 }) {
   const { addTask, updateTask, isLoading } = useTaskStore();
   const { courses, fetchCourses } = useCourseStore();
@@ -47,6 +50,10 @@ export default function ScheduleDialog({
   const [estimatedDurationMins, setEstimatedDurationMins] = useState<number | "">("");
   const [isEstimating, setIsEstimating] = useState(false);
   const [aiReasoning, setAiReasoning] = useState<string | null>(null);
+  const [recommendationStatus, setRecommendationStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [recommendedSlots, setRecommendedSlots] = useState<any[]>([]);
+  const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
+  const [showRecommendations, setShowRecommendations] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [conflict, setConflict] = useState<{ type: 'task' | 'fixed', title: string } | null>(null);
 
@@ -73,16 +80,19 @@ export default function ScheduleDialog({
     } else {
       setTitle(""); setDescription(""); setCategory("assignment");
       setPriority("medium"); setDate(undefined); setStartTime(""); setEndTime("23:59"); setCourseId("other");
-      setCourseId("other");
-      setScheduleMode("manual");
+      setScheduleMode(defaultMode);
       setEstimatedDurationMins("");
       setAiReasoning(null);
       setPeriodStart(new Date());
       setPeriodEnd(addDays(new Date(), 7));
+      setRecommendationStatus("idle");
+      setRecommendedSlots([]);
+      setSelectedSlotIndex(null);
+      setShowRecommendations(false);
     }
     setErr(null);
     setConflict(null);
-  }, [taskToEdit, open]);
+  }, [taskToEdit, open, defaultMode]);
 
   // Proactive Conflict Check
   useEffect(() => {
@@ -174,6 +184,35 @@ export default function ScheduleDialog({
       }
   }
 
+  async function handleGetRecommendations() {
+      if (!title.trim()) { setErr("Please enter a title."); return; }
+      if (courseId === "other") { setErr("Please select a specific course for AI scheduling."); return; }
+      if (!periodStart || !periodEnd) { setErr("Please select a time range."); return; }
+      if (!estimatedDurationMins) { setErr("Please estimate or enter a duration first."); return; }
+      
+      setRecommendationStatus("loading");
+      setErr(null);
+      try {
+          const res = await api.post("/tasks/recommend-slots", {
+              course_id: Number(courseId),
+              task_type: category === "extra" ? "Extracurricular" : category === "exam" ? "Exam" : "Assignment",
+              difficulty: priority === "low" ? "Easy" : priority === "high" ? "Hard" : "Medium",
+              description: title + "\n" + description,
+              estimated_duration_mins: Number(estimatedDurationMins),
+              period_start: format(periodStart, "yyyy-MM-dd"),
+              period_end: format(periodEnd, "yyyy-MM-dd"),
+          });
+          setRecommendedSlots(res.data.recommendations || []);
+          setSelectedSlotIndex(null);
+          setRecommendationStatus("success");
+          setShowRecommendations(true);
+      } catch(e: any) {
+          const detail = e?.response?.data?.detail;
+          setErr(detail || "Failed to get recommendations. Please try manually scheduling.");
+          setRecommendationStatus("error");
+      }
+  }
+
   async function handleSubmit() {
     setErr(null);
     if (!title.trim()) { setErr("Title is required."); return; }
@@ -210,8 +249,22 @@ export default function ScheduleDialog({
         planned_start = start.toISOString();
       }
     } else {
-      if (!periodEnd) { setErr("End date is required."); return; }
-      deadlineIso = periodEnd.toISOString();
+      if (!showRecommendations || selectedSlotIndex === null) { 
+          setErr("Please select an AI recommended slot or switch to manual mode."); 
+          return; 
+      }
+      const slot = recommendedSlots[selectedSlotIndex];
+      const slotDate = new Date(slot.date);
+      
+      const start = new Date(slotDate);
+      const [sh, sm] = slot.start_time.split(":").map(Number);
+      start.setHours(sh, sm, 0, 0);
+      planned_start = start.toISOString();
+
+      const end = new Date(slotDate);
+      const [eh, em] = slot.end_time.split(":").map(Number);
+      end.setHours(eh, em, 0, 0);
+      deadlineIso = end.toISOString();
     }
 
     try {
@@ -280,12 +333,12 @@ export default function ScheduleDialog({
 
         <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-5 custom-scrollbar">
           {!taskToEdit && (
-            <Tabs value={scheduleMode} onValueChange={(v) => setScheduleMode(v as "manual" | "ai")} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 rounded-xl h-11 bg-secondary/50 p-1">
-                <TabsTrigger value="manual" className="rounded-lg font-medium">
+            <Tabs value={scheduleMode} onValueChange={(v) => { setScheduleMode(v as "manual" | "ai"); if(v === "manual") setShowRecommendations(false); }} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 rounded-xl h-12 bg-secondary/80 p-1 border border-border/50 shadow-inner">
+                <TabsTrigger value="manual" className="rounded-lg font-bold transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-border/60">
                    <CalendarDays className="w-4 h-4 mr-2" /> Manual Schedule
                 </TabsTrigger>
-                <TabsTrigger value="ai" className="rounded-lg font-medium text-vibrant-purple data-[state=active]:bg-vibrant-purple/10 data-[state=active]:text-vibrant-purple">
+                <TabsTrigger value="ai" className="rounded-lg font-bold transition-all data-[state=active]:bg-vibrant-purple data-[state=active]:text-white data-[state=active]:shadow-md border border-transparent data-[state=active]:border-vibrant-purple/50 data-[state=active]:scale-[1.02]">
                    <Sparkles className="w-4 h-4 mr-2" /> AI Schedule
                 </TabsTrigger>
               </TabsList>
@@ -354,16 +407,18 @@ export default function ScheduleDialog({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 p-4 rounded-xl bg-vibrant-purple/5 border border-vibrant-purple/10">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-vibrant-purple/70">Time Range (Start Date)</Label>
-                <DatePicker date={periodStart} setDate={setPeriodStart} />
+            !showRecommendations && (
+              <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 p-4 rounded-xl bg-vibrant-purple/5 border border-vibrant-purple/10">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-vibrant-purple/70">Time Range (Start Date)</Label>
+                  <DatePicker date={periodStart} setDate={setPeriodStart} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-vibrant-purple/70">Time Range (End Date)</Label>
+                  <DatePicker date={periodEnd} setDate={setPeriodEnd} />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-vibrant-purple/70">Time Range (End Date)</Label>
-                <DatePicker date={periodEnd} setDate={setPeriodEnd} />
-              </div>
-            </div>
+            )
           )}
 
           {conflict && scheduleMode === "manual" && (
@@ -382,17 +437,19 @@ export default function ScheduleDialog({
           )}
 
           {/* Row 4: Description */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Description</Label>
-                {scheduleMode === "ai" && (
-                   <span className="text-[10px] text-vibrant-purple animate-pulse flex items-center bg-vibrant-purple/10 px-2 py-0.5 rounded-full">
-                     <Info className="w-3 h-3 mr-1" /> Highly recommended for AI to estimate accurately
-                   </span>
-                )}
-            </div>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add details..." className="rounded-xl resize-none h-24" />
-          </div>
+          {!showRecommendations && (
+             <div className="space-y-2">
+               <div className="flex justify-between items-center">
+                   <Label className="text-xs font-semibold uppercase tracking-wider text-foreground/70">Description</Label>
+                   {scheduleMode === "ai" && (
+                      <span className="text-[10px] text-vibrant-purple animate-pulse flex items-center bg-vibrant-purple/10 px-2 py-0.5 rounded-full">
+                        <Info className="w-3 h-3 mr-1" /> Highly recommended for AI to estimate accurately
+                      </span>
+                   )}
+               </div>
+               <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add details..." className="rounded-xl resize-none h-24" />
+             </div>
+          )}
 
           {scheduleMode === "ai" && (
             <div className="space-y-3 animate-in fade-in zoom-in-95 duration-200">
@@ -419,6 +476,17 @@ export default function ScheduleDialog({
                       Estimate Duration
                   </Button>
                </div>
+               
+               <Button 
+                   type="button" 
+                   onClick={handleGetRecommendations} 
+                   disabled={recommendationStatus === "loading" || !title.trim() || courseId === "other" || !estimatedDurationMins} 
+                   className="w-full rounded-xl shadow-md border-2 border-vibrant-purple/20 bg-vibrant-purple/10 text-vibrant-purple hover:bg-vibrant-purple hover:text-white transition-all mt-2 h-12"
+               >
+                   {recommendationStatus === "loading" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-5 h-5 mr-2" />}
+                   <span className="font-bold text-sm tracking-wide">Get Smart Recommendations</span>
+               </Button>
+               
                {aiReasoning && (
                   <div className="p-4 rounded-xl bg-vibrant-purple/5 border border-vibrant-purple/20 relative overflow-hidden group">
                       <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -434,15 +502,55 @@ export default function ScheduleDialog({
             </div>
           )}
 
+          {scheduleMode === "ai" && showRecommendations && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 p-1">
+                 <div className="flex justify-between items-center mb-4">
+                     <Label className="text-base font-bold text-foreground flex items-center">
+                         <Sparkles className="w-5 h-5 mr-2 text-vibrant-purple" />
+                         Recommended Slots
+                     </Label>
+                     <Button variant="ghost" size="sm" onClick={() => { setShowRecommendations(false); setScheduleMode("manual"); }} className="text-xs h-8 text-muted-foreground hover:text-vibrant-purple transition-colors">
+                        Select Manually
+                     </Button>
+                 </div>
+                 
+                 {recommendedSlots.length === 0 ? (
+                     <p className="text-sm text-muted-foreground p-4 text-center rounded-xl border border-border bg-secondary/30">No suitable slots found in the selected range.</p>
+                 ) : (
+                     <RadioGroup value={selectedSlotIndex?.toString()} onValueChange={(v: string) => setSelectedSlotIndex(Number(v))} className="space-y-3">
+                         {recommendedSlots.map((slot, idx) => (
+                             <div key={idx} className={`relative flex items-start space-x-4 p-4 rounded-xl border-2 transition-all cursor-pointer hover:shadow-md ${selectedSlotIndex === idx ? 'border-vibrant-purple bg-vibrant-purple/5 shadow-sm' : 'border-border/50 bg-card hover:border-vibrant-purple/30'}`}>
+                                 <RadioGroupItem value={idx.toString()} id={`slot-${idx}`} className="mt-1 flex-shrink-0" />
+                                 <label htmlFor={`slot-${idx}`} className="flex-1 space-y-1.5 cursor-pointer">
+                                     <div className="flex items-center justify-between">
+                                         <span className="text-sm font-bold text-foreground flex items-center">
+                                             {slot.day}, {format(new Date(slot.date), "MMM d")}
+                                         </span>
+                                         <span className="text-xs font-semibold px-2 py-1 rounded-md bg-secondary text-secondary-foreground">
+                                             {slot.start_time.substring(0,5)} - {slot.end_time.substring(0,5)}
+                                         </span>
+                                     </div>
+                                     <p className="text-xs text-muted-foreground leading-relaxed mt-1 line-clamp-2">
+                                         <strong className="text-foreground/80 font-semibold mr-1">Why:</strong>
+                                         {slot.reasoning}
+                                     </p>
+                                 </label>
+                             </div>
+                         ))}
+                     </RadioGroup>
+                 )}
+              </div>
+          )}
+
           {err && <div className="text-sm font-medium text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{err}</div>}
         </div>
         </div>
 
         <DialogFooter className="border-t border-border p-4 bg-muted/20 shrink-0">
           <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="rounded-xl shadow-md" onClick={handleSubmit} disabled={isLoading || !title.trim() || (scheduleMode === "manual" ? (!date || !!conflict) : (!periodStart || !periodEnd))}>
+          <Button className="rounded-xl shadow-md" onClick={handleSubmit} disabled={isLoading || !title.trim() || (scheduleMode === "manual" ? (!date || !!conflict) : (!showRecommendations || selectedSlotIndex === null))}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {taskToEdit ? "Update" : "Save"}
+            {taskToEdit ? "Update" : (scheduleMode === "manual" ? "Save" : "Confirm Slot")}
           </Button>
         </DialogFooter>
       </DialogContent>

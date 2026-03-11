@@ -23,7 +23,7 @@ export default function TasksPage() {
     const [openFeedback, setOpenFeedback] = useState(false);
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [search, setSearch] = useState("");
-    const [isScheduling, setIsScheduling] = useState(false);
+    const [dialogMode, setDialogMode] = useState<"manual" | "ai">("manual");
     const [confettiActive, setConfettiActive] = useState(false);
     const [gapTaskSuggestion, setGapTaskSuggestion] = useState<Task | null>(null);
     const { updateTask } = useTaskStore();
@@ -44,9 +44,6 @@ export default function TasksPage() {
     };
     
     const handleDelete = async (id: string) => {
-        if (confirm("Task deleted. Would you like to re-optimize the free time in your schedule to fill the gap?")) {
-            await handleSmartSchedule();
-        }
         await deleteTask(id);
     };
 
@@ -100,42 +97,7 @@ export default function TasksPage() {
         }
     };
 
-    const handleSmartSchedule = async () => {
-        setIsScheduling(true);
-        try {
-            const pendingTasks = tasks.filter(t => t.status === "pending" && !t.planned_start);
-            if (pendingTasks.length === 0) {
-                toast.info("No pending, unscheduled tasks found.");
-                return;
-            }
-            
-            // Mock AI scheduling logic: schedule pending tasks starting from tomorrow 9 AM
-            let currentDate = setMinutes(setHours(new Date(), 9), 0);
-            currentDate.setDate(currentDate.getDate() + 1); // target tomorrow
-            
-            for (const task of pendingTasks) {
-                const start = new Date(currentDate);
-                const end = addHours(start, 2); // default 2 hours blocks
-                await updateTask(task.id, {
-                    planned_start: start.toISOString(),
-                    planned_end: end.toISOString()
-                });
-                // increment for next task + 1 hour gap
-                currentDate = addHours(end, 1);
-                // reset to 9AM next day if past 5PM
-                if (currentDate.getHours() >= 17) {
-                    currentDate.setDate(currentDate.getDate() + 1);
-                    currentDate.setHours(9, 0, 0, 0);
-                }
-            }
-            toast.success(`Successfully AI scheduled ${pendingTasks.length} tasks!`);
-            await fetchTasks();
-        } catch (e) {
-            toast.error("Failed to run Smart Schedule.");
-        } finally {
-             setIsScheduling(false);
-        }
-    };
+
 
     return (
         <div className="space-y-6 relative">
@@ -150,15 +112,14 @@ export default function TasksPage() {
                 </div>
                 <div className="flex gap-2">
                     <Button
-                        onClick={handleSmartSchedule}
-                        disabled={isScheduling}
-                        className="rounded-xl shadow-md transition-all duration-200 bg-vibrant-blue hover:bg-vibrant-blue/90 magic-btn"
+                        onClick={() => { setSelectedTask(undefined); setDialogMode("ai"); setOpenSchedule(true); }}
+                        className="rounded-xl shadow-md transition-all duration-200 bg-vibrant-purple hover:bg-vibrant-purple/90 text-white magic-btn border border-vibrant-purple/50"
                     >
-                        {isScheduling ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4 animate-twinkle" />}
+                        <Sparkles className="mr-1.5 h-4 w-4 animate-twinkle text-white" />
                         ✨ Smart Schedule
                     </Button>
                     <Button
-                        onClick={() => { setSelectedTask(undefined); setOpenSchedule(true); }}
+                        onClick={() => { setSelectedTask(undefined); setDialogMode("manual"); setOpenSchedule(true); }}
                         className="rounded-xl shadow-neon transition-all duration-200 hover:-translate-y-0.5 active:scale-95 magic-btn animate-pulse-glow"
                     >
                         <Plus className="mr-1.5 h-4 w-4" />
@@ -209,7 +170,7 @@ export default function TasksPage() {
                     </div>
                     {!search && filterStatus === "all" && (
                         <Button
-                            onClick={() => { setSelectedTask(undefined); setOpenSchedule(true); }}
+                            onClick={() => { setSelectedTask(undefined); setDialogMode("manual"); setOpenSchedule(true); }}
                             className="rounded-xl mt-2"
                         >
                             <Plus className="mr-1.5 h-4 w-4" />
@@ -306,6 +267,7 @@ export default function TasksPage() {
                     if (!open) setSelectedTask(undefined);
                 }}
                 taskToEdit={selectedTask}
+                defaultMode={dialogMode}
             />
 
             <TaskFeedbackDialog
